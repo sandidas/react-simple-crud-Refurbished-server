@@ -111,9 +111,10 @@ app.get("/jwt", verifyJWT, async (req, res) => {
 //==================================
 //
 const usersCollection = client.db("refurbished").collection("users");
-const appointmentOptionsCollection = client.db("refubrished").collection("appointmentOptions");
+const productCollection = client.db("refurbished").collection("products");
+const ordersCollection = client.db("refurbished").collection("orders");
+const productReportCollection = client.db("refurbished").collection("productReports");
 
-const bookingsCollection = client.db("refubrished").collection("bookings");
 // test insert one
 // const result = await usersCollection.insertOne({
 //   name: "Test User"
@@ -183,7 +184,34 @@ app.put("/user/:uid", async (req, res) => {
   } catch (error) {}
 });
 //
-//
+// Store product information
+app.post("/product", verifyJWT, async (req, res) => {
+  const product = req.body;
+
+  try {
+    const result = await productCollection.insertOne(product); // post data
+    // success post data
+    if (result.insertedId) {
+      return res.send({
+        success: true,
+        insertedId: result.insertedId,
+        message: `Product created successfully`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data insert fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 //
 //
