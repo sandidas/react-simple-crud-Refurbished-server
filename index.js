@@ -212,7 +212,61 @@ app.post("/product", verifyJWT, async (req, res) => {
     });
   }
 });
-
+// Update product information
+app.patch("/product/:id", verifyJWT, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const result = await productCollection.updateOne({ _id: ObjectId(id) }, { $set: req.body });
+    // success post data
+    if (result.matchedCount) {
+      return res.send({
+        success: true,
+        message: `Product Updated successfully`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data insert fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+// get products list
+app.get("/products", async (req, res) => {
+  const uid = req.query.uid;
+  const filter = { uid: uid };
+  console.log("test");
+  try {
+    const result = await productCollection.find(filter).toArray();
+    // success post data
+    if (result) {
+      return res.send({
+        success: true,
+        data: result,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 //
 //
 // Verify the server is running or not
