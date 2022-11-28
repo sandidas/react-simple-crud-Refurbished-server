@@ -239,10 +239,9 @@ app.patch("/product/:id", verifyJWT, async (req, res) => {
   }
 });
 // get products list
-app.get("/products", async (req, res) => {
+app.get("/products", verifyJWT, async (req, res) => {
   const uid = req.query.uid;
   const filter = { uid: uid };
-  console.log("test");
   try {
     const result = await productCollection.find(filter).toArray();
     // success post data
@@ -250,6 +249,132 @@ app.get("/products", async (req, res) => {
       return res.send({
         success: true,
         data: result,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+// =====================
+// front end API's
+// =====================
+// get advertised products only for front end
+app.get("/productsAdvertised", async (req, res) => {
+  const filter = { isAdvertise: true };
+  try {
+    const result = await productCollection.find(filter).toArray();
+
+    let products = await Promise.all(
+      // to fix promise pending issues, I used Promise.all()
+      result.map(async (data) => {
+        let product = data;
+        const userVerify = await usersCollection.findOne({ uid: data.uid });
+        //  console.log("user: ", userVerify);
+        product.userVerified = userVerify.sellerIsVerified;
+        product.sellerName = userVerify.name;
+        return product;
+        console.log(product);
+      })
+    );
+    // success post data
+    if (products) {
+      return res.send({
+        success: true,
+        data: products,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+// Product By Category
+app.get("/productByCategory/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = { categorySlug: id };
+  try {
+    const result = await productCollection.find(filter).toArray();
+
+    let products = await Promise.all(
+      // to fix promise pending issues, I used Promise.all()
+      result.map(async (data) => {
+        let product = data;
+        const userVerify = await usersCollection.findOne({ uid: data.uid });
+        //  console.log("user: ", userVerify);
+        product.userVerified = userVerify.sellerIsVerified;
+        product.sellerName = userVerify.name;
+        return product;
+        console.log(product);
+      })
+    );
+    // success post data
+    if (products) {
+      return res.send({
+        success: true,
+        data: products,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+//
+//
+app.get("/categories/:id", async (req, res) => {
+  const filter = { isAdvertise: true };
+  try {
+    const result = await productCollection.find(filter).toArray();
+
+    let products = await Promise.all(
+      // to fix promise pending issues, I used Promise.all()
+      result.map(async (data) => {
+        let product = data;
+        const userVerify = await usersCollection.findOne({ uid: data.uid });
+        //  console.log("user: ", userVerify);
+        product.userVerified = userVerify.sellerIsVerified;
+        product.sellerName = userVerify.name;
+        return product;
+        console.log(product);
+      })
+    );
+    // success post data
+    if (products) {
+      return res.send({
+        success: true,
+        data: products,
         message: `Successfully fetched`,
       });
     } else {
