@@ -393,7 +393,7 @@ app.get("/categories/:id", async (req, res) => {
 });
 //
 //
-app.post("/orderCreate", async (req, res) => {
+app.post("/orderCreate", verifyJWT, async (req, res) => {
   const order = req.body;
   const productId = req.body.productId;
   const productContent = {
@@ -402,10 +402,6 @@ app.post("/orderCreate", async (req, res) => {
   try {
     const result = await ordersCollection.insertOne(order); // post data
     const updateProduct = await productCollection.updateOne({ _id: ObjectId(productId) }, { $set: productContent });
-
-    console.log(updateProduct);
-    console.log(result);
-
     // success post data
     if (result.insertedId) {
       return res.send({
@@ -429,6 +425,40 @@ app.post("/orderCreate", async (req, res) => {
   }
 });
 //
+//
+app.post("/reportCreate", verifyJWT, async (req, res) => {
+  const order = req.body;
+  const productId = req.body.productId;
+  const productContent = {
+    isReported: true,
+  };
+  try {
+    const result = await productReportCollection.insertOne(order); // post data
+    const updateProduct = await productCollection.updateOne({ _id: ObjectId(productId) }, { $set: productContent });
+    console.log(result);
+    console.log(updateProduct);
+    // success post data
+    if (result.insertedId) {
+      return res.send({
+        success: true,
+        insertedId: result.insertedId,
+        message: `Report created successfully`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data insert fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 //
 // Verify the server is running or not
 app.get("/", (req, res) => {
