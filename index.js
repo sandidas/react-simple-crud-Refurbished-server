@@ -271,7 +271,7 @@ app.get("/products", verifyJWT, async (req, res) => {
 // =====================
 // get advertised products only for front end
 app.get("/productsAdvertised", async (req, res) => {
-  const filter = { isAdvertise: true };
+  const filter = { isAdvertise: true, status: "Available" };
   try {
     const result = await productCollection.find(filter).toArray();
 
@@ -312,7 +312,7 @@ app.get("/productsAdvertised", async (req, res) => {
 // Product By Category
 app.get("/productByCategory/:id", async (req, res) => {
   const id = req.params.id;
-  const filter = { categorySlug: id };
+  const filter = { categorySlug: id, status: "Available" };
   try {
     const result = await productCollection.find(filter).toArray();
 
@@ -350,9 +350,8 @@ app.get("/productByCategory/:id", async (req, res) => {
     });
   }
 });
-
 //
-//
+// PRODUCT FEATCH FOR CATEGORY PAGES
 app.get("/categories/:id", async (req, res) => {
   const filter = { isAdvertise: true };
   try {
@@ -382,6 +381,43 @@ app.get("/categories/:id", async (req, res) => {
       return res.send({
         success: false,
         message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+//
+//
+app.post("/orderCreate", async (req, res) => {
+  const order = req.body;
+  const productId = req.body.productId;
+  const productContent = {
+    isBooked: true,
+  };
+  try {
+    const result = await ordersCollection.insertOne(order); // post data
+    const updateProduct = await productCollection.updateOne({ _id: ObjectId(productId) }, { $set: productContent });
+
+    console.log(updateProduct);
+    console.log(result);
+
+    // success post data
+    if (result.insertedId) {
+      return res.send({
+        success: true,
+        insertedId: result.insertedId,
+        message: `order created successfully`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data insert fail!",
       });
     }
   } catch (error) {
