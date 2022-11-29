@@ -149,7 +149,7 @@ const verifyQueryRole = async (req, res, next) => {
 const verifyAdmin = async (req, res, next) => {
   const uid = req.query.uid;
   const user = await usersCollection.findOne({ uid: uid });
-  if (!user.is_admin && user.role != "admin") {
+  if (!user.is_admin || user.role !== "Admin") {
     return res.status(401).send({
       message: "Unauthorized Access! 011001",
       success: false,
@@ -226,7 +226,7 @@ app.put("/user/:uid", async (req, res) => {
       expiresIn: "1d", // after 1 day the login jwt will expired automatically
     });
     if (result.acknowledged) {
-      console.log(result);
+      // console.log(result);
       return res.send({
         success: true,
         result: result,
@@ -326,6 +326,83 @@ app.get("/products", verifyJWT, async (req, res) => {
 });
 //
 // =====================
+//  API's Admin || Select user By Type
+// =====================
+app.get("/userByType", verifyAdmin, verifyJWT, async (req, res) => {
+  const uid = req.query.uid;
+  const role = req.query.role;
+  const filter = { role: role };
+  try {
+    const result = await usersCollection.find(filter).toArray();
+    // success post data
+    if (result) {
+      return res.send({
+        success: true,
+        data: result,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+app.delete("/deleteUser", verifyAdmin, verifyJWT, async (req, res) => {
+  // const uid = req.query.uid; // to check Admin or not
+  const role = req.query.role;
+  const toDeleteUser = req.query.toDeleteUser;
+  const deleteOthers = { uid: toDeleteUser };
+
+  console.log("toDeleteUser", toDeleteUser);
+  // console.log("query", query);
+  // console.log("deleteOthers", deleteOthers);
+
+  try {
+    const result = await usersCollection.deleteOne(deleteOthers);
+    await productCollection.deleteMany(deleteOthers);
+    await ordersCollection.deleteMany(deleteOthers);
+    await productReportCollection.deleteMany(deleteOthers);
+    // success post data
+    if (result) {
+      return res.send({
+        success: true,
+        data: result,
+        message: `Successfully Deleted`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+/*
+.then((result) => {
+      if (result.deletedCount === 0) {
+        console.log("list is empty");
+      }
+      console.log(result);
+    });
+*/
+// =====================
 //  API's buyer to get Orders
 // =====================
 // get products list
@@ -374,12 +451,13 @@ app.get("/productsAdvertised", async (req, res) => {
         let product = data;
         const userVerify = await usersCollection.findOne({ uid: data.uid });
         //  console.log("user: ", userVerify);
-        product.userVerified = userVerify.sellerIsVerified;
-        product.sellerName = userVerify.name;
+        product.userVerified = userVerify?.sellerIsVerified || false;
+        product.sellerName = userVerify?.name || false;
         return product;
         console.log(product);
       })
     );
+    console.log(products);
     // success post data
     if (products) {
       return res.send({
@@ -415,8 +493,8 @@ app.get("/productByCategory/:id", async (req, res) => {
         let product = data;
         const userVerify = await usersCollection.findOne({ uid: data.uid });
         //  console.log("user: ", userVerify);
-        product.userVerified = userVerify.sellerIsVerified;
-        product.sellerName = userVerify.name;
+        product.userVerified = userVerify?.sellerIsVerified || false;
+        product.sellerName = userVerify?.name || false;
         return product;
         console.log(product);
       })
@@ -456,8 +534,8 @@ app.get("/categories/:id", async (req, res) => {
         let product = data;
         const userVerify = await usersCollection.findOne({ uid: data.uid });
         //  console.log("user: ", userVerify);
-        product.userVerified = userVerify.sellerIsVerified;
-        product.sellerName = userVerify.name;
+        product.userVerified = userVerify?.sellerIsVerified || false;
+        product.sellerName = userVerify?.name || false;
         return product;
         console.log(product);
       })
