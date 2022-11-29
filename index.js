@@ -300,7 +300,8 @@ app.patch("/product/:id", verifyJWT, async (req, res) => {
 // get products list
 app.get("/products", verifyJWT, async (req, res) => {
   const uid = req.query.uid;
-  const filter = { uid: uid };
+  const role = req.query.role;
+  const filter = { uid: uid, role: role };
   try {
     const result = await productCollection.find(filter).toArray();
     // success post data
