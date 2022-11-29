@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors"); // cors middleware
 require("dotenv").config(); // to reason of security
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 // const cloudinary = require("cloudinary").v2;
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb"); // Mongo DB
@@ -119,10 +121,64 @@ const productReportCollection = client.db("refurbished").collection("productRepo
 // const result = await usersCollection.insertOne({
 //   name: "Test User"
 // })
-
+// =====================
+// Verify role,  user id and admin
+// =====================
+const verifyQueryUserId = async (req, res, next) => {
+  const uid = req.query.uid;
+  if (!uid) {
+    return res.status(401).send({
+      message: "Unauthorized Access! 6337",
+      success: false,
+      status: 401,
+    });
+  }
+  next();
+};
+const verifyQueryRole = async (req, res, next) => {
+  const role = req.query.role;
+  if (!role) {
+    return res.status(401).send({
+      message: "Unauthorized Access! 4076",
+      success: false,
+      status: 401,
+    });
+  }
+  next();
+};
+const verifyAdmin = async (req, res, next) => {
+  const uid = req.query.uid;
+  const user = await usersCollection.findOne({ uid: uid });
+  if (!user.is_admin && user.role != "admin") {
+    return res.status(401).send({
+      message: "Unauthorized Access! 011001",
+      success: false,
+      status: 401,
+    });
+  }
+  next();
+};
 //=======================
 // code block
 //=======================
+//
+app.post("/create-payment-intent", async (req, res) => {
+  const items = req.body;
+  const price = items.price;
+  const amount = price * 100;
+
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    // amount: calculateOrderAmount(items),
+    currency: "usd",
+    amount: amount,
+    payment_method_types: ["card"],
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
 //
 // save user email and generate jwt while login process
 // if the user is already in collection then it will update or if not in collection it will create new.
@@ -266,9 +322,44 @@ app.get("/products", verifyJWT, async (req, res) => {
     });
   }
 });
+//
 // =====================
-// front end API's
+//  API's buyer to get Orders
 // =====================
+// get products list
+app.get("/orders", verifyQueryUserId, verifyQueryRole, async (req, res) => {
+  const uid = req.query.uid;
+  const role = req.query.role;
+  const filter = { uid: uid };
+  try {
+    const result = await ordersCollection.find(filter).toArray();
+    // success post data
+    if (result) {
+      return res.send({
+        success: true,
+        data: result,
+        message: `Successfully fetched`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data fetch fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// =====================
+// front end API's Home Pages Advertised Products
+// =====================
+
 // get advertised products only for front end
 app.get("/productsAdvertised", async (req, res) => {
   const filter = { isAdvertise: true, status: "Available" };
@@ -435,8 +526,6 @@ app.post("/reportCreate", verifyJWT, async (req, res) => {
   try {
     const result = await productReportCollection.insertOne(order); // post data
     const updateProduct = await productCollection.updateOne({ _id: ObjectId(productId) }, { $set: productContent });
-    console.log(result);
-    console.log(updateProduct);
     // success post data
     if (result.insertedId) {
       return res.send({
