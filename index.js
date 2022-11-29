@@ -329,7 +329,7 @@ app.get("/products", verifyJWT, async (req, res) => {
 // =====================
 //  API's Admin || Select user By Type
 // =====================
-app.get("/userByType", async (req, res) => {
+app.get("/userByType", verifyAdmin, verifyJWT, async (req, res) => {
   const uid = req.query.uid;
   const role = req.query.role;
   let filter = { role: role };
@@ -363,7 +363,7 @@ app.get("/userByType", async (req, res) => {
 });
 
 app.delete("/deleteUser", verifyAdmin, verifyJWT, async (req, res) => {
-  // const uid = req.query.uid; // to check Admin or not
+  //--> do not delete const uid = req.query.uid; // to check Admin or not
   const role = req.query.role;
   const toDeleteUser = req.query.toDeleteUser;
   const deleteOthers = { uid: toDeleteUser };
@@ -394,6 +394,37 @@ app.delete("/deleteUser", verifyAdmin, verifyJWT, async (req, res) => {
     });
   }
 });
+
+// Update product information
+app.patch("/userEdit", verifyAdmin, verifyJWT, async (req, res) => {
+  //--> do not delete const uid = req.query.uid; // to check Admin or not
+  const toUpdateUser = req.query.toUpdateUser;
+  const updateUser = { uid: toUpdateUser };
+
+  try {
+    const result = await usersCollection.updateOne(updateUser, { $set: req.body });
+    // success post data
+    if (result.modifiedCount) {
+      return res.send({
+        success: true,
+        message: `User updated successfully`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "Data Update fail!",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 /*
 .then((result) => {
       if (result.deletedCount === 0) {
