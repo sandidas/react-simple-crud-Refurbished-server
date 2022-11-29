@@ -185,13 +185,14 @@ app.post("/create-payment-intent", async (req, res) => {
 // check user type while login to redirect user based dashboard
 // also this function will work to find user existing or not.
 // this function link with new user create function
-app.get("/usertype/:uid", async (req, res) => {
+app.get("/singleuser/:uid", async (req, res) => {
   const uid = req.params.uid;
   try {
     const user = await usersCollection.findOne({ uid: uid });
     if (user?._id) {
       return res.send({
         success: true,
+        data: user,
         typeOfUser: user.role,
         message: "User Found",
       });
@@ -328,10 +329,14 @@ app.get("/products", verifyJWT, async (req, res) => {
 // =====================
 //  API's Admin || Select user By Type
 // =====================
-app.get("/userByType", verifyAdmin, verifyJWT, async (req, res) => {
+app.get("/userByType", async (req, res) => {
   const uid = req.query.uid;
   const role = req.query.role;
-  const filter = { role: role };
+  let filter = { role: role };
+  if (role === "all") {
+    filter = {};
+  }
+  console.log(uid, "d", role);
   try {
     const result = await usersCollection.find(filter).toArray();
     // success post data
@@ -362,11 +367,6 @@ app.delete("/deleteUser", verifyAdmin, verifyJWT, async (req, res) => {
   const role = req.query.role;
   const toDeleteUser = req.query.toDeleteUser;
   const deleteOthers = { uid: toDeleteUser };
-
-  console.log("toDeleteUser", toDeleteUser);
-  // console.log("query", query);
-  // console.log("deleteOthers", deleteOthers);
-
   try {
     const result = await usersCollection.deleteOne(deleteOthers);
     await productCollection.deleteMany(deleteOthers);
@@ -454,10 +454,8 @@ app.get("/productsAdvertised", async (req, res) => {
         product.userVerified = userVerify?.sellerIsVerified || false;
         product.sellerName = userVerify?.name || false;
         return product;
-        console.log(product);
       })
     );
-    console.log(products);
     // success post data
     if (products) {
       return res.send({
