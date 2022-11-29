@@ -183,6 +183,8 @@ app.post("/create-payment-intent", async (req, res) => {
 // save user email and generate jwt while login process
 // if the user is already in collection then it will update or if not in collection it will create new.
 // check user type while login to redirect user based dashboard
+// also this function will work to find user existing or not.
+// this function link with new user create function
 app.get("/usertype/:uid", async (req, res) => {
   const uid = req.params.uid;
   try {
