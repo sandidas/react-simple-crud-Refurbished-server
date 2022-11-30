@@ -116,6 +116,7 @@ const usersCollection = client.db("refurbished").collection("users");
 const productCollection = client.db("refurbished").collection("products");
 const ordersCollection = client.db("refurbished").collection("orders");
 const productReportCollection = client.db("refurbished").collection("productReports");
+const paymentCollection = client.db("refurbished").collection("payments");
 
 // test insert one
 // const result = await usersCollection.insertOne({
@@ -162,23 +163,7 @@ const verifyAdmin = async (req, res, next) => {
 // code block
 //=======================
 //
-app.post("/create-payment-intent", async (req, res) => {
-  const items = req.body;
-  const price = items.price;
-  const amount = price * 100;
 
-  // Create a PaymentIntent with the order amount and currency
-  const paymentIntent = await stripe.paymentIntents.create({
-    // amount: calculateOrderAmount(items),
-    currency: "usd",
-    amount: amount,
-    payment_method_types: ["card"],
-  });
-
-  res.send({
-    clientSecret: paymentIntent.client_secret,
-  });
-});
 //
 // save user email and generate jwt while login process
 // if the user is already in collection then it will update or if not in collection it will create new.
@@ -308,7 +293,7 @@ app.get("/products", verifyJWT, async (req, res) => {
   }
   if (role === "Admin" && reported) {
     filter = { isReported: true };
-  } 
+  }
   try {
     const result = await productCollection.find(filter).toArray();
     // success post data
@@ -507,7 +492,7 @@ app.get("/orders", verifyQueryUserId, verifyQueryRole, async (req, res) => {
 
 // get advertised products only for front end
 app.get("/productsAdvertised", async (req, res) => {
-  const filter = { isAdvertise: true, status: "Available" };
+  const filter = { isAdvertise: true, status: "Available", isPaid: false };
   try {
     const result = await productCollection.find(filter).toArray();
 
@@ -547,7 +532,7 @@ app.get("/productsAdvertised", async (req, res) => {
 // Product By Category
 app.get("/productByCategory/:id", async (req, res) => {
   const id = req.params.id;
-  const filter = { categorySlug: id, status: "Available" };
+  const filter = { categorySlug: id, status: "Available", isPaid: false };
   try {
     const result = await productCollection.find(filter).toArray();
 
@@ -691,6 +676,49 @@ app.post("/reportCreate", verifyJWT, async (req, res) => {
       message: error.message,
     });
   }
+});
+//
+//
+// stripe payment
+app.post("/create-payment-intent", async (req, res) => {
+  const booking = req.body;
+  const price = parseFloat(booking.productPrice);
+  const amount = price * 100;
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount,
+    currency: "usd",
+    payment_method_types: ["card"],
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+//
+//
+app.post("/payment", async (req, res) => {
+  const payment = req.body;
+  const result = await paymentCollection.insertOne(payment);
+  const id = payment.bookingId;
+  const query = { _id: ObjectId(id) };
+  const updatedDoc = {
+    $set: {
+      paymentStatus: "Paid" || true,
+      transactionId: payment?.transactionId || true,
+    },
+  };
+  const updateOrder = await ordersCollection.updateOne(query, updatedDoc);
+  const idTwo = payment.productId;
+  const queryTwo = { _id: ObjectId(idTwo) };
+  const updatedDocTwo = {
+    $set: {
+      isPaid: true,
+    },
+  };
+  const updateProduct = await productCollection.updateOne(queryTwo, updatedDocTwo);
+  console.log("updateOrder: ", updateOrder);
+  console.log(updateProduct);
+  console.log(result);
+  res.send(result);
 });
 //
 // Verify the server is running or not
