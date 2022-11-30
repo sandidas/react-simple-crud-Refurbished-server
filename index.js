@@ -301,10 +301,14 @@ app.patch("/product/:id", verifyJWT, async (req, res) => {
 app.get("/products", verifyJWT, async (req, res) => {
   const uid = req.query.uid;
   const role = req.query.role;
+  const reported = req?.query?.reported || false;
   let filter = { uid: uid };
   if (role === "Admin") {
     filter = {};
   }
+  if (role === "Admin" && reported) {
+    filter = { isReported: true };
+  } 
   try {
     const result = await productCollection.find(filter).toArray();
     // success post data
@@ -335,7 +339,6 @@ app.delete("/product", verifyAdmin, verifyJWT, async (req, res) => {
   const query = { _id: ObjectId(id) };
   try {
     const result = await productCollection.deleteOne(query);
-    console.log(result);
     // success post data
     if (result.deletedCount) {
       return res.send({
