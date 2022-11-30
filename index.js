@@ -301,7 +301,10 @@ app.patch("/product/:id", verifyJWT, async (req, res) => {
 app.get("/products", verifyJWT, async (req, res) => {
   const uid = req.query.uid;
   const role = req.query.role;
-  const filter = { uid: uid, role: role };
+  let filter = { uid: uid };
+  if (role === "Admin") {
+    filter = {};
+  }
   try {
     const result = await productCollection.find(filter).toArray();
     // success post data
@@ -326,6 +329,35 @@ app.get("/products", verifyJWT, async (req, res) => {
     });
   }
 });
+app.delete("/product", verifyAdmin, verifyJWT, async (req, res) => {
+  //--> do not delete const uid = req.query.uid; // to check Admin or not
+  const id = req.query.productId;
+  const query = { _id: ObjectId(id) };
+  try {
+    const result = await productCollection.deleteOne(query);
+    console.log(result);
+    // success post data
+    if (result.deletedCount) {
+      return res.send({
+        success: true,
+        data: result,
+        message: `Successfully Deleted`,
+      });
+    } else {
+      // fail post data
+      return res.send({
+        success: false,
+        message: "FAIL! 215465",
+      });
+    }
+  } catch (error) {
+    // fail post data
+    return res.send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 //
 // =====================
 //  API's Admin || Select user By Type
@@ -337,7 +369,6 @@ app.get("/userByType", verifyAdmin, verifyJWT, async (req, res) => {
   if (role === "all") {
     filter = {};
   }
-  console.log(uid, "d", role);
   try {
     const result = await usersCollection.find(filter).toArray();
     // success post data
