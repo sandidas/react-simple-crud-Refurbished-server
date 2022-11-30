@@ -715,9 +715,9 @@ app.post("/payment", async (req, res) => {
     },
   };
   const updateProduct = await productCollection.updateOne(queryTwo, updatedDocTwo);
-  console.log("updateOrder: ", updateOrder);
-  console.log(updateProduct);
-  console.log(result);
+  // console.log("updateOrder: ", updateOrder);
+  // console.log(updateProduct);
+  // console.log(result);
   res.send(result);
 });
 //
